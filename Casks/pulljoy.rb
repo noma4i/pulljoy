@@ -1,8 +1,8 @@
 cask "pulljoy" do
-  version "1.1.1"
-  sha256 "651c0b9f4f950f5cff5fdb0ebdea1e098e2cbdb6a6f21393027f60a6ca5ffdfe"
+  version "1.1.2"
+  sha256 "4d8fb9bf883bb8cf12ab602d85f512c37d76d62f5ed7b08f6620b0a72a26135a"
 
-  url "https://api.github.com/repos/noma4i/pulljoy/releases/assets/617810345",
+  url "https://api.github.com/repos/noma4i/pulljoy/releases/assets/617845357",
       header: [
         "Accept: application/octet-stream",
         "Authorization: Bearer #{ENV.fetch("HOMEBREW_GITHUB_API_TOKEN", "")}",
