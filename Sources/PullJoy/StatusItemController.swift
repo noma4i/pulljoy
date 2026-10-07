@@ -42,7 +42,7 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
 
         model.hidePopup = { [weak self] in self?.popover.performClose(nil) }
         model.togglePopup = { [weak self] in self?.toggle() }
-        model.showRowMenu = { [weak self] item in self?.showMenu(for: item) }
+        model.showRowMenu = { [weak self] item, atPointer in self?.showMenu(for: item, atPointer: atPointer) }
         model.onSettingsChange = { [weak self] settings in self?.applyAppearance(settings.theme) }
         model.inbox.onChange = { [weak self] snapshot in self?.updateBadge(snapshot) }
 
@@ -152,7 +152,7 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     }
 
     /// The row menu, hung off the selected row — what the M key opens.
-    private func showMenu(for item: ClassifiedPullRequest) {
+    private func showMenu(for item: ClassifiedPullRequest, atPointer: Bool) {
         let view = hostingController.view
         let menu = NSMenu()
         for entry in prMenuEntries(isSnoozed: item.isSnoozed) {
@@ -162,6 +162,11 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             case .item(let label, let action):
                 menu.addItem(ClosureMenuItem(label) { [weak self] in self?.model.perform(action, on: item) })
             }
+        }
+        if atPointer, let window = view.window {
+            let pointer = view.convert(window.convertPoint(fromScreen: NSEvent.mouseLocation), from: nil)
+            menu.popUp(positioning: nil, at: pointer, in: view)
+            return
         }
         // A row the lazy list hasn't laid out has no frame; hang the menu under
         // the header instead of in a corner.

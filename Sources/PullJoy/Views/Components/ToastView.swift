@@ -3,7 +3,7 @@ import SwiftUI
 
 struct ToastView: View {
     var toast: Toast
-    var onUndo: () -> Void
+    var onAction: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
@@ -11,8 +11,8 @@ struct ToastView: View {
                 .font(.caption)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
-            if toast.canUndo {
-                Button("Undo", action: onUndo)
+            if let label = toast.actionLabel {
+                Button(label, action: onAction)
                     .controlSize(.small)
             }
         }
@@ -29,6 +29,7 @@ struct ToastView: View {
         case .snoozed: "#\(toast.number) snoozed"
         case .unsubscribed: "#\(toast.number) unsubscribed"
         case .failure(let text): "Couldn't unsubscribe #\(toast.number): \(text)"
+        case .needsPermission: "PullJoy needs one more permission to unsubscribe."
         }
     }
 }

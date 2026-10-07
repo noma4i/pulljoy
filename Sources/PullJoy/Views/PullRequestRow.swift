@@ -11,7 +11,11 @@ struct PullRequestRow: View {
 
     private var item: ClassifiedPullRequest { row.item }
     private var pr: PullRequest { row.item.pr }
+    @State private var hovering = false
+    @State private var overButton = false
+
     private var isActive: Bool { model.selectedID == item.id }
+    private var showsActions: Bool { isActive || hovering }
 
     // The connector's geometry is derived from these, so changing the padding
     // or the avatar moves the line with it.
@@ -40,13 +44,16 @@ struct PullRequestRow: View {
         }
         .background(isActive ? Metrics.selection : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .contentShape(Rectangle())
-        .onHover { inside in if inside { model.pointAt(item.id) } }
+        .onHover { inside in
+            hovering = inside
+            if inside { model.pointAt(item.id) }
+        }
         .onTapGesture { model.open(item) }
         .linkCursor()
         // After the tap gesture, so a click on the button can only ever open
         // the menu, never the pull request as well.
         .overlay(alignment: .topTrailing) {
-            if !compact { actionsMenu }
+            if !compact { actionsButton }
         }
         .contextMenu { PRMenuItems(model: model, item: item) }
         .background {
@@ -99,7 +106,7 @@ struct PullRequestRow: View {
                 Spacer(minLength: 0)
                 // Holds the actions button's place; the button itself is laid
                 // over the row, outside the tap that opens the pull request.
-                Color.clear.frame(width: Self.menuButtonSize.width)
+                Color.clear.frame(width: Self.menuButtonSize.width - 4)
             }
             .font(.caption)
             .frame(height: Self.metaLineHeight)
@@ -117,27 +124,30 @@ struct PullRequestRow: View {
         }
     }
 
-    static let menuButtonSize = CGSize(width: 20, height: metaLineHeight)
+    static let menuButtonSize = CGSize(width: 28, height: 26)
 
-    /// The same menu the right-click and the M key open — the button is only
-    /// the affordance that says it is there. Always in the layout, revealed
-    /// when the row is active, so moving between rows never reflows them.
-    private var actionsMenu: some View {
-        Menu {
-            PRMenuItems(model: model, item: item)
+    /// The same menu the right-click and the M key open: a plain button, since
+    /// a SwiftUI `Menu` answers only over its glyph. Always in the layout, shown
+    /// while the row is hovered or selected, so moving between rows never reflows them.
+    private var actionsButton: some View {
+        Button {
+            model.showRowMenu(item, true)
         } label: {
             Image(systemName: "ellipsis")
-                .foregroundStyle(.secondary)
+                .font(.title3.weight(.bold))
+                .foregroundStyle(overButton ? .primary : .secondary)
+                .frame(width: Self.menuButtonSize.width, height: Self.menuButtonSize.height)
+                .background(overButton ? Metrics.faintFill : .clear, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .contentShape(Rectangle())
+                .onHover { overButton = $0 }
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .frame(width: Self.menuButtonSize.width, height: Self.menuButtonSize.height)
-        .opacity(isActive ? 1 : 0)
-        .allowsHitTesting(isActive)
+        .buttonStyle(.plain)
+        .opacity(showsActions ? 1 : 0)
+        .allowsHitTesting(showsActions)
         .help("Actions — M")
-        // Level with the meta line: the two text lines are centred in the row.
-        .padding(.top, (rowHeight - Self.contentHeight) / 2)
-        .padding(.trailing, leadingInset)
+        .padding(.top, (rowHeight - Self.contentHeight) / 2 + (Self.metaLineHeight - Self.menuButtonSize.height) / 2)
+        .padding(.trailing, leadingInset - 4)
+        .transaction { $0.animation = nil }
     }
 
     private var compactContent: some View {

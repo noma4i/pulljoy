@@ -57,6 +57,11 @@ extension GitHubError {
 /// A dead token — revoked or expired. Only a 401 means the token itself is no good.
 extension GitHubError {
     public var isAuth: Bool { status == 401 }
+
+    /// GitHub refusing a field because the token was issued without the scope it needs.
+    public var isMissingScope: Bool {
+        messages.contains { $0.contains("has not been granted the required scopes") }
+    }
 }
 
 /// When a hit rate limit lifts, or nil if `error` isn't one. GitHub attaches

@@ -16,7 +16,7 @@ struct RootView: View {
         .background(Color(nsColor: .windowBackgroundColor))
         .overlay(alignment: .bottom) {
             if let toast = model.toast, !model.showSettings {
-                ToastView(toast: toast) { model.undoToast() }
+                ToastView(toast: toast) { model.toastAction() }
                     .padding(.bottom, 56)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }

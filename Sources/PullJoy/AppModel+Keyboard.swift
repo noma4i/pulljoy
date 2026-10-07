@@ -36,7 +36,7 @@ extension AppModel {
             refresh()
             return true
         case "m":
-            if let item = selectedItem { showRowMenu(item) }
+            if let item = selectedItem { showRowMenu(item, false) }
             return true
         default:
             return false

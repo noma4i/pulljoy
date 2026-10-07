@@ -363,3 +363,16 @@ private let unrelatedGraphQLError = graphqlError(["Field \"bogus\" does not exis
         }
     }
 }
+
+@Suite struct IsMissingScopeTests {
+    @Test func recognisesGitHubRefusingATokenForLackOfAScope() {
+        let message =
+            "Your token has not been granted the required scopes to execute this query. The 'updateSubscription' field requires one of the following scopes: ['notifications']"
+        #expect(graphqlError([message], data: nil).isMissingScope)
+    }
+
+    @Test func doesNotMistakeOtherFailuresForIt() {
+        #expect(!graphqlError(["Could not resolve to a node"], data: nil).isMissingScope)
+        #expect(!GitHubError.network("offline").isMissingScope)
+    }
+}

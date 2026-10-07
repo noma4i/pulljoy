@@ -17,15 +17,19 @@ struct Toast: Equatable {
         case snoozed
         case unsubscribed
         case failure(String)
+        case needsPermission
     }
 
     var kind: Kind
     var prId: String
     var number: Int
 
-    var canUndo: Bool {
-        if case .failure = kind { return false }
-        return true
+    var actionLabel: String? {
+        switch kind {
+        case .snoozed, .unsubscribed: "Undo"
+        case .needsPermission: "Sign in again"
+        case .failure: nil
+        }
     }
 }
 
@@ -48,7 +52,7 @@ final class AppModel {
     /// Set by the popover controller.
     @ObservationIgnored var hidePopup: () -> Void = {}
     @ObservationIgnored var togglePopup: () -> Void = {}
-    @ObservationIgnored var showRowMenu: (ClassifiedPullRequest) -> Void = { _ in }
+    @ObservationIgnored var showRowMenu: (ClassifiedPullRequest, _ atPointer: Bool) -> Void = { _, _ in }
     @ObservationIgnored var onSettingsChange: (Preferences) -> Void = { _ in }
 
     private(set) var settings: Preferences
@@ -269,7 +273,8 @@ final class AppModel {
             } catch {
                 if subscribed { store.unsubscribe(id) } else { store.resubscribe(id) }
                 inbox.reclassify()
-                showToast(.failure(describeError(error)), id: id, number: number)
+                let missingScope = error.asGitHubError?.isMissingScope == true
+                showToast(missingScope ? .needsPermission : .failure(describeError(error)), id: id, number: number)
             }
         }
     }
@@ -278,18 +283,28 @@ final class AppModel {
         toast = Toast(kind: kind, prId: id, number: number)
         toastTask?.cancel()
         toastTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(kind == .snoozed || kind == .unsubscribed ? 4 : 8))
+            try? await Task.sleep(for: .seconds(kind == .snoozed || kind == .unsubscribed ? 4 : 10))
             guard !Task.isCancelled else { return }
             self?.toast = nil
         }
     }
 
-    func undoToast() {
+    func toastAction() {
+        guard let toast else { return }
+        switch toast.kind {
+        case .needsPermission:
+            signOut()
+            startSignIn()
+        default: undoToast()
+        }
+    }
+
+    private func undoToast() {
         guard let toast else { return }
         switch toast.kind {
         case .snoozed: unsnooze(toast.prId)
         case .unsubscribed: setSubscribed(true, id: toast.prId, number: toast.number)
-        case .failure: break
+        case .failure, .needsPermission: break
         }
         toastTask?.cancel()
         self.toast = nil
