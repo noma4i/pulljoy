@@ -30,6 +30,8 @@ struct ToastView: View {
         case .unsubscribed: "#\(toast.number) unsubscribed"
         case .failure(let text): "Couldn't unsubscribe #\(toast.number): \(text)"
         case .needsPermission: "PullJoy needs one more permission to unsubscribe."
+        case .hiddenOnly(let organization):
+            "#\(toast.number) hidden here. \(organization) doesn't let apps change subscriptions, so GitHub still notifies you."
         }
     }
 }

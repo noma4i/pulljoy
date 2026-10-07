@@ -64,10 +64,17 @@ struct SubscriptionTests {
         let client = RecordingClient()
         let inbox = Inbox(store: defaults.makeStore(), client: client)
 
-        try await inbox.setSubscribed(false, prID: "PR_1")
-        try await inbox.setSubscribed(true, prID: "PR_1")
+        #expect(try await inbox.setSubscribed(false, prID: "PR_1") == .changed)
+        #expect(try await inbox.setSubscribed(true, prID: "PR_1") == .changed)
 
         #expect(client.changes == [Change(id: "PR_1", state: "UNSUBSCRIBED"), Change(id: "PR_1", state: "SUBSCRIBED")])
+    }
+
+    @Test func reportsAnOrganizationThatDoesNotAllowTheApp() async throws {
+        let client = RecordingClient(failure: .graphql(messages: [restrictionMessage("awesome-print")], partialData: nil))
+        let inbox = Inbox(store: defaults.makeStore(), client: client)
+
+        #expect(try await inbox.setSubscribed(false, prID: "PR_1") == .refusedByOrganization("awesome-print"))
     }
 
     @Test func passesGitHubsRefusalOn() async {

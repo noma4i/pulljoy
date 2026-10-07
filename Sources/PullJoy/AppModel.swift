@@ -18,6 +18,7 @@ struct Toast: Equatable {
         case unsubscribed
         case failure(String)
         case needsPermission
+        case hiddenOnly(String)
     }
 
     var kind: Kind
@@ -26,7 +27,7 @@ struct Toast: Equatable {
 
     var actionLabel: String? {
         switch kind {
-        case .snoozed, .unsubscribed: "Undo"
+        case .snoozed, .unsubscribed, .hiddenOnly: "Undo"
         case .needsPermission: "Sign in again"
         case .failure: nil
         }
@@ -269,7 +270,10 @@ final class AppModel {
             await previous?.value
             guard let self else { return }
             do {
-                try await inbox.setSubscribed(subscribed, prID: id)
+                let result = try await inbox.setSubscribed(subscribed, prID: id)
+                if case .refusedByOrganization(let organization) = result, !subscribed {
+                    showToast(.hiddenOnly(organization), id: id, number: number)
+                }
             } catch {
                 if subscribed { store.unsubscribe(id) } else { store.resubscribe(id) }
                 inbox.reclassify()
@@ -303,7 +307,7 @@ final class AppModel {
         guard let toast else { return }
         switch toast.kind {
         case .snoozed: unsnooze(toast.prId)
-        case .unsubscribed: setSubscribed(true, id: toast.prId, number: toast.number)
+        case .unsubscribed, .hiddenOnly: setSubscribed(true, id: toast.prId, number: toast.number)
         case .failure, .needsPermission: break
         }
         toastTask?.cancel()

@@ -236,11 +236,24 @@ public final class Inbox {
         }
     }
 
+    public enum SubscriptionResult: Equatable, Sendable {
+        case changed
+        /// The organization restricts OAuth apps, so only its owners can let PullJoy change anything there.
+        case refusedByOrganization(String)
+    }
+
     /// Subscribes to a pull request's notifications on GitHub, or unsubscribes from them.
-    public func setSubscribed(_ subscribed: Bool, prID: String) async throws {
+    public func setSubscribed(_ subscribed: Bool, prID: String) async throws -> SubscriptionResult {
         guard let client else { throw GitHubError.malformed("Signed out, so there is no account to change") }
-        _ = try await client.execute(
-            Queries.updateSubscription, variables: ["id": .string(prID), "state": .string(subscribed ? "SUBSCRIBED" : "UNSUBSCRIBED")])
+        do {
+            _ = try await client.execute(
+                Queries.updateSubscription,
+                variables: ["id": .string(prID), "state": .string(subscribed ? "SUBSCRIBED" : "UNSUBSCRIBED")])
+            return .changed
+        } catch let error as GitHubError {
+            guard error.isOnlyRestriction, let organization = error.restrictedOrganizations.first else { throw error }
+            return .refusedByOrganization(organization)
+        }
     }
 
     /// Refreshes now and then every poll interval, until `stop`.
