@@ -1,0 +1,36 @@
+included: [Sources, Tests]
+excluded: [Sources/PullJoy/DemoInbox.swift]
+strict: true
+
+opt_in_rules:
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - unowned_variable_capture
+  - weak_delegate
+  - fatal_error_message
+  - first_where
+  - contains_over_filter_count
+  - empty_count
+  - redundant_nil_coalescing
+  - toggle_bool
+  - private_swiftui_state
+
+disabled_rules:
+  - trailing_comma
+  - opening_brace
+
+line_length: 140
+function_body_length: 60
+file_length: 450
+type_body_length: 300
+cyclomatic_complexity:
+  warning: 15
+  error: 20
+nesting:
+  type_level: 3
+large_tuple:
+  warning: 3
+  error: 4
+identifier_name:
+  min_length: 1
+  allowed_symbols: ["_"]
