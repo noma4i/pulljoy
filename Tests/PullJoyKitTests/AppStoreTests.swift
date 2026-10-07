@@ -287,3 +287,27 @@ private let NOW = d("2026-08-10T12:00:00Z")
         #expect(store.snoozes.isEmpty)
     }
 }
+
+@Suite struct AppStoreUnsubscribeTests {
+    let defaults = TestDefaults()
+
+    @Test func startsWithNothingUnsubscribed() {
+        #expect(defaults.makeStore().unsubscribed.isEmpty)
+    }
+
+    @Test func remembersWhatWasUnsubscribedAcrossLaunches() {
+        defaults.makeStore().unsubscribe("PR_1")
+        defaults.makeStore().unsubscribe("PR_2")
+
+        #expect(defaults.makeStore().unsubscribed == ["PR_1", "PR_2"])
+    }
+
+    @Test func forgetsAPullRequestWhenResubscribed() {
+        let store = defaults.makeStore()
+        store.unsubscribe("PR_1")
+        store.unsubscribe("PR_2")
+        store.resubscribe("PR_1")
+
+        #expect(defaults.makeStore().unsubscribed == ["PR_2"])
+    }
+}

@@ -4,8 +4,8 @@ import Testing
 
 private let now = d("2026-08-10T12:00:00Z")
 
-private func ctx(_ snoozes: [String: Snooze] = [:]) -> ClassifyContext {
-    ClassifyContext(myLogin: me, snoozes: snoozes, now: now)
+private func ctx(_ snoozes: [String: Snooze] = [:], unsubscribed: Set<String> = []) -> ClassifyContext {
+    ClassifyContext(myLogin: me, snoozes: snoozes, unsubscribed: unsubscribed, now: now)
 }
 
 private func mine(_ configure: (inout PullRequest) -> Void = { _ in }) -> PullRequest {
@@ -32,6 +32,13 @@ private func repliedThread(id: String = "thread-1", replyAt: String = "2026-08-0
                 $0.buckets = [.reviewRequested]
             }
             #expect(classify(pr, context: ctx()).category == .hidden)
+        }
+
+        @Test("hides a pull request I unsubscribed from, whatever else is waiting on me") func hidesUnsubscribed() {
+            let pr = makePullRequest { $0.buckets = [.reviewRequested] }
+            #expect(classify(pr, context: ctx()).category == .needsReview)
+            #expect(classify(pr, context: ctx(unsubscribed: [pr.id])).category == .hidden)
+            #expect(classify(pr, context: ctx(unsubscribed: ["another"])).category == .needsReview)
         }
 
         @Test("hides a PR I am neither requested on nor involved in") func hidesUninvolved() {

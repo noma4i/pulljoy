@@ -4,8 +4,9 @@ import Network
 import Security
 
 /// `repo` and `read:org` are the narrowest scopes that can still see pull
-/// requests in private repositories and review requests that arrived through a team.
-public let githubScopes = "repo read:org"
+/// requests in private repositories and review requests that arrived through a
+/// team. `notifications` is what GitHub asks for to unsubscribe from one.
+public let githubScopes = "repo read:org notifications"
 
 public struct OAuthApp: Sendable, Equatable {
     public var clientID: String

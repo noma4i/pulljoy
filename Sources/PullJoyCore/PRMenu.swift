@@ -9,6 +9,7 @@ public enum PRMenuAction: String, Sendable, CaseIterable {
     case snooze4Hours
     case snoozeUntilTomorrow
     case unsnooze
+    case unsubscribe
 }
 
 public enum PRMenuEntry: Hashable, Sendable {
@@ -16,7 +17,7 @@ public enum PRMenuEntry: Hashable, Sendable {
     case item(label: String, action: PRMenuAction)
 }
 
-/// The card's menu, top to bottom: opens, then copies, then snooze. Every
+/// The card's menu, top to bottom: opens, then copies, then snooze, then unsubscribe. Every
 /// label carries its own verb, so no item depends on the section above it.
 ///
 /// "New activity" is deliberately vaguer than the wake condition in
@@ -37,7 +38,7 @@ public func prMenuEntries(isSnoozed: Bool) -> [PRMenuEntry] {
         .item(label: "Copy link", action: .copyLink),
         .item(label: "Copy branch name", action: .copyBranch),
         .separator,
-    ] + snooze
+    ] + snooze + [.separator, .item(label: "Unsubscribe", action: .unsubscribe)]
 }
 
 /// Whether `url` may be handed to the system to open. PR URLs come from

@@ -12,9 +12,21 @@ enum SettingsPane {
     case root, repositories
 }
 
-struct SnoozeToast: Equatable {
+struct Toast: Equatable {
+    enum Kind: Equatable {
+        case snoozed
+        case unsubscribed
+        case failure(String)
+    }
+
+    var kind: Kind
     var prId: String
     var number: Int
+
+    var canUndo: Bool {
+        if case .failure = kind { return false }
+        return true
+    }
 }
 
 /// Owns the app's services and everything the popup shows. Views read from it
@@ -30,6 +42,7 @@ final class AppModel {
     @ObservationIgnored private let hotKey = HotKey()
     @ObservationIgnored private var signInTask: Task<Void, Never>?
     @ObservationIgnored private var toastTask: Task<Void, Never>?
+    @ObservationIgnored private var subscriptionTail: Task<Void, Never>?
     @ObservationIgnored private var clockTask: Task<Void, Never>?
 
     /// Set by the popover controller.
@@ -52,7 +65,7 @@ final class AppModel {
     /// Bumped on a deliberate move — keys, a click — so the list scrolls to it.
     /// A hover moves the selection quietly and must not scroll under the pointer.
     private(set) var scrollRequest = 0
-    private(set) var toast: SnoozeToast?
+    private(set) var toast: Toast?
     /// Keeps the relative ages honest without re-fetching anything.
     private(set) var now = Date()
     private(set) var signIn = SignInState.idle
@@ -221,6 +234,7 @@ final class AppModel {
         case .snooze4Hours: snooze(item, type: .untilTime, hours: 4)
         case .snoozeUntilTomorrow: snooze(item, type: .untilTime, hours: 24)
         case .unsnooze: unsnooze(pr.id)
+        case .unsubscribe: setSubscribed(false, id: pr.id, number: pr.number)
         }
     }
 
@@ -232,7 +246,7 @@ final class AppModel {
     func snooze(_ item: ClassifiedPullRequest, type: SnoozeType, hours: Int? = nil) {
         store.snooze(item.pr.id, type: type, now: Date(), hours: hours, headSHA: item.pr.headSHA)
         inbox.reclassify()
-        showToast(for: item)
+        showToast(.snoozed, id: item.pr.id, number: item.pr.number)
     }
 
     func unsnooze(_ prId: String) {
@@ -240,11 +254,31 @@ final class AppModel {
         inbox.reclassify()
     }
 
-    private func showToast(for item: ClassifiedPullRequest) {
-        toast = SnoozeToast(prId: item.pr.id, number: item.pr.number)
+    /// Hides the pull request at once and tells GitHub in the background; if GitHub refuses, it comes back.
+    private func setSubscribed(_ subscribed: Bool, id: String, number: Int) {
+        if subscribed { store.resubscribe(id) } else { store.unsubscribe(id) }
+        inbox.reclassify()
+        if !subscribed { showToast(.unsubscribed, id: id, number: number) }
+
+        let previous = subscriptionTail
+        subscriptionTail = Task { [weak self] in
+            await previous?.value
+            guard let self else { return }
+            do {
+                try await inbox.setSubscribed(subscribed, prID: id)
+            } catch {
+                if subscribed { store.unsubscribe(id) } else { store.resubscribe(id) }
+                inbox.reclassify()
+                showToast(.failure(describeError(error)), id: id, number: number)
+            }
+        }
+    }
+
+    private func showToast(_ kind: Toast.Kind, id: String, number: Int) {
+        toast = Toast(kind: kind, prId: id, number: number)
         toastTask?.cancel()
         toastTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(4))
+            try? await Task.sleep(for: .seconds(kind == .snoozed || kind == .unsubscribed ? 4 : 8))
             guard !Task.isCancelled else { return }
             self?.toast = nil
         }
@@ -252,52 +286,13 @@ final class AppModel {
 
     func undoToast() {
         guard let toast else { return }
-        unsnooze(toast.prId)
+        switch toast.kind {
+        case .snoozed: unsnooze(toast.prId)
+        case .unsubscribed: setSubscribed(true, id: toast.prId, number: toast.number)
+        case .failure: break
+        }
         toastTask?.cancel()
         self.toast = nil
-    }
-
-    // MARK: - Keyboard
-
-    /// Handles a key pressed in the popup. Returns false to let it through —
-    /// to a focused text field, say.
-    func handleKey(keyCode: UInt16, characters: String, isTyping: Bool) -> Bool {
-        // Esc closes the popup from anywhere, settings included.
-        if keyCode == 53 {
-            hidePopup()
-            return true
-        }
-        guard !isTyping, !showSettings, snapshot.status != .signedOut else { return false }
-
-        switch keyCode {
-        case 125:
-            moveSelection(by: 1)
-            return true
-        case 126:
-            moveSelection(by: -1)
-            return true
-        case 36, 76:
-            if let item = selectedItem { open(item) }
-            return true
-        default: break
-        }
-
-        switch characters.lowercased() {
-        case "s":
-            guard let item = selectedItem else { return true }
-            // Straight to "until new activity": the key is for speed, not for
-            // picking a duration. Still raises the toast so Undo works.
-            if item.isSnoozed { unsnooze(item.id) } else { snooze(item, type: .untilActivity) }
-            return true
-        case "r":
-            refresh()
-            return true
-        case "m":
-            if let item = selectedItem { showRowMenu(item) }
-            return true
-        default:
-            return false
-        }
     }
 
     // MARK: - Settings

@@ -5,6 +5,14 @@ enum Queries {
         }
         """
 
+    static let updateSubscription = """
+        mutation UpdateSubscription($id: ID!, $state: SubscriptionState!) {
+          updateSubscription(input: { subscribableId: $id, state: $state }) {
+            subscribable { id }
+          }
+        }
+        """
+
     static let search = """
         query SearchPullRequests($q: String!) {
           rateLimit { cost remaining resetAt }

@@ -56,7 +56,7 @@ private func browser(_ query: @escaping @Sendable (_ state: String) -> [String])
         let query = parameters(of: url)
         #expect(url.host == "github.com")
         #expect(query["client_id"] == "client-id")
-        #expect(query["scope"] == "repo read:org")
+        #expect(query["scope"] == "repo read:org notifications")
         #expect(query["code_challenge_method"] == "S256")
         #expect(query["redirect_uri"]?.hasPrefix("http://127.0.0.1:") == true)
 

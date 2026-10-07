@@ -24,13 +24,14 @@ It is a native macOS app built with Apple's own tools: **Swift, SwiftUI and AppK
 - 🔒 **Private repos and team requests.** If an organisation restricts OAuth Apps, its pull requests are left out and a notice names it. The list stays current for every organisation PullJoy can see.
 - 🧬 **Stacks stay together.** A stacked PR shows its place in the chain (`2/4`), drawn as one connected run, dotted where a member is hidden.
 - 💤 **Snooze until new activity**, for 4 hours or until tomorrow, with Undo.
+- 🔕 **Unsubscribe** from a pull request you no longer care about: GitHub stops notifying you and PullJoy hides it for good, with Undo.
 - 📌 **Lives in the menu bar** with a quiet count. No Dock icon.
 - ⚡ **Global shortcut**, `⌃⌥P` by default, opens the inbox from anywhere.
 - ⌨️ **Keyboard-driven.** `↑↓` move, `⏎` open, `S` snooze, `R` refresh, `M` menu, `esc` close.
 - 🌗 **Light, dark, comfortable or compact.**
 - 🚀 **Start at login**, through the system's own login items.
 - 🤖 **MCP server** for Claude Code and other agents. See [MCP.md](MCP.md).
-- 👀 **Read-only by design.** PullJoy never comments, approves, or merges.
+- 👀 **Hands off your pull requests.** PullJoy never comments, approves, or merges. The only thing it changes on GitHub is your subscription, and only when you choose Unsubscribe.
 
 ## 📦 Install
 
@@ -48,11 +49,11 @@ Releases are signed with a Developer ID and notarized by Apple.
 
 Click **Sign in with GitHub** in the popup. Your browser opens on github.com. Approve the access there, and you land back in PullJoy, signed in. No code to copy and nothing to type.
 
-PullJoy asks for `repo` and `read:org`, the narrowest scopes that can see pull requests in private repositories and team review requests. The token is stored in your login Keychain. **Sign out** in Settings removes it.
+PullJoy asks for `repo` and `read:org`, the narrowest scopes that can see pull requests in private repositories and team review requests, and for `notifications`, which GitHub requires to unsubscribe you from a pull request. The token is stored in your login Keychain. **Sign out** in Settings removes it.
 
 ## 🔐 Privacy
 
-No backend, no analytics, no telemetry. The app talks to GitHub's API and nothing else. The token lives in your login Keychain. Sign-in asks for `repo` and `read:org`, the narrowest scopes that can see pull requests in private repositories and team review requests. The only thing PullJoy writes is its own settings and snooze list, on your Mac. The optional MCP server is off until you turn it on, and listens on `127.0.0.1` only.
+No backend, no analytics, no telemetry. The app talks to GitHub's API and nothing else. The token lives in your login Keychain. Sign-in asks for `repo`, `read:org` and `notifications` (see above). The only thing PullJoy writes is its own settings and snooze list, on your Mac. The optional MCP server is off until you turn it on, and listens on `127.0.0.1` only.
 
 ## 🙏 Credits
 

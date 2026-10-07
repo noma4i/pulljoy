@@ -14,7 +14,7 @@ private func labels(_ isSnoozed: Bool) -> [String] {
 }
 
 @Suite("prMenuEntries") struct PRMenuTests {
-    @Test("leads with the opens, then the copies, then snooze") func order() {
+    @Test("leads with the opens, then the copies, then snooze, then unsubscribe") func order() {
         #expect(
             labels(false) == [
                 "Open on GitHub",
@@ -24,12 +24,13 @@ private func labels(_ isSnoozed: Bool) -> [String] {
                 "Snooze until new activity",
                 "Snooze for 4 hours",
                 "Snooze until tomorrow",
+                "Unsubscribe",
             ])
     }
 
     @Test("gives every item its own verb, so none leans on the section above it") func ownVerb() {
         for label in labels(false) {
-            #expect(["Open ", "Copy ", "Snooze "].contains { label.hasPrefix($0) })
+            #expect(["Open ", "Copy ", "Snooze ", "Unsubscribe"].contains { label.hasPrefix($0) })
         }
     }
 
@@ -41,12 +42,13 @@ private func labels(_ isSnoozed: Bool) -> [String] {
                 "Copy link",
                 "Copy branch name",
                 "Unsnooze",
+                "Unsubscribe",
             ])
     }
 
-    @Test("separates the opens, the copies and snooze into three sections") func sections() {
+    @Test("separates the opens, the copies, snooze and unsubscribe into four sections") func sections() {
         let shape = prMenuEntries(isSnoozed: false).map { $0 == .separator ? "separator" : "item" }
-        #expect(shape == ["item", "item", "separator", "item", "item", "separator", "item", "item", "item"])
+        #expect(shape == ["item", "item", "separator", "item", "item", "separator", "item", "item", "item", "separator", "item"])
     }
 
     @Test("never repeats an action") func uniqueActions() {

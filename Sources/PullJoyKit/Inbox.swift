@@ -88,7 +88,7 @@ public final class Inbox {
     }
 
     private func classified(myLogin: String, at now: Date) -> [ClassifiedPullRequest] {
-        let context = ClassifyContext(myLogin: myLogin, snoozes: store.snoozes, now: now)
+        let context = ClassifyContext(myLogin: myLogin, snoozes: store.snoozes, unsubscribed: store.unsubscribed, now: now)
         return attachStacks(classifyAll(filterByRepositories(prs, repositoryFilter), context: context))
     }
 
@@ -111,7 +111,7 @@ public final class Inbox {
         guard let pr = prs.first(where: { $0.number == number && $0.repository.lowercased() == wanted }) else {
             return nil
         }
-        let context = ClassifyContext(myLogin: myLogin, snoozes: store.snoozes, now: now())
+        let context = ClassifyContext(myLogin: myLogin, snoozes: store.snoozes, unsubscribed: store.unsubscribed, now: now())
         return attachStacks([classify(pr, context: context)]).first
     }
 
@@ -234,6 +234,13 @@ public final class Inbox {
             // A dead token fails every refresh the same way forever.
             if error.asGitHubError?.isAuth == true { onAuthError?() }
         }
+    }
+
+    /// Subscribes to a pull request's notifications on GitHub, or unsubscribes from them.
+    public func setSubscribed(_ subscribed: Bool, prID: String) async throws {
+        guard let client else { throw GitHubError.malformed("Signed out, so there is no account to change") }
+        _ = try await client.execute(
+            Queries.updateSubscription, variables: ["id": .string(prID), "state": .string(subscribed ? "SUBSCRIBED" : "UNSUBSCRIBED")])
     }
 
     /// Refreshes now and then every poll interval, until `stop`.

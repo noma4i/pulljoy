@@ -12,6 +12,7 @@ public struct InvalidRepositoryError: Error, LocalizedError, Equatable {
 public final class AppStore: @unchecked Sendable {
     private static let settingsKey = "settings"
     private static let snoozesKey = "snoozes"
+    private static let unsubscribedKey = "unsubscribed"
 
     private let defaults: UserDefaults
     private let lock = NSLock()
@@ -72,7 +73,27 @@ public final class AppStore: @unchecked Sendable {
         }
     }
 
+    public var unsubscribed: Set<String> {
+        lock.withLock { readUnsubscribed() }
+    }
+
+    public func unsubscribe(_ prId: String) {
+        lock.withLock { writeUnsubscribed(readUnsubscribed().union([prId])) }
+    }
+
+    public func resubscribe(_ prId: String) {
+        lock.withLock { writeUnsubscribed(readUnsubscribed().subtracting([prId])) }
+    }
+
     // MARK: - Unlocked; callers hold `lock`
+
+    private func readUnsubscribed() -> Set<String> {
+        Set(defaults.stringArray(forKey: Self.unsubscribedKey) ?? [])
+    }
+
+    private func writeUnsubscribed(_ ids: Set<String>) {
+        defaults.set(ids.sorted(), forKey: Self.unsubscribedKey)
+    }
 
     private func readSettings() -> Preferences {
         guard let data = defaults.data(forKey: Self.settingsKey),

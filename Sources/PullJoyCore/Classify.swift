@@ -3,12 +3,15 @@ import Foundation
 public struct ClassifyContext: Sendable {
     public var myLogin: String
     public var snoozes: [String: Snooze]
+    /// Pull requests the user unsubscribed from: never shown again.
+    public var unsubscribed: Set<String>
     /// Treated as "now". Injected so the classifier stays pure.
     public var now: Date
 
-    public init(myLogin: String, snoozes: [String: Snooze] = [:], now: Date) {
+    public init(myLogin: String, snoozes: [String: Snooze] = [:], unsubscribed: Set<String> = [], now: Date) {
         self.myLogin = myLogin
         self.snoozes = snoozes
+        self.unsubscribed = unsubscribed
         self.now = now
     }
 }
@@ -132,7 +135,7 @@ private func classifyOwnPR(_ pr: PullRequest, myLogin: String) -> Verdict {
 /// Classifies one pull request. `stack` is always nil here: a stack position is
 /// a separate fact, attached afterwards by the inbox.
 public func classify(_ pr: PullRequest, context ctx: ClassifyContext) -> ClassifiedPullRequest {
-    if pr.isDraft {
+    if pr.isDraft || ctx.unsubscribed.contains(pr.id) {
         return ClassifiedPullRequest(pr: pr, category: .hidden, reason: nil, waitingSince: nil, isSnoozed: false)
     }
 
